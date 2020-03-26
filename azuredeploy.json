@@ -75,7 +75,7 @@
     {
       "type": "microsoft.storagesync/storageSyncServices",
       "apiVersion": "2019-06-01",
-      "name": "[concat(parameters('syncServiceName'), '/default')]",
+      "name": "[parameters('syncServiceName')]",
       "location": "eastus",
       "properties": {},
       "tags": "[parameters('tags')]"
@@ -119,19 +119,6 @@
     },
 
     {
-      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
-      "apiVersion": "2019-06-01",
-      "name": "[concat(parameters('fileshareName'), '/default')]",
-      "dependsOn": [
-        "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccountName'), 'default')]",
-        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
-      ],
-      "properties": {
-        "shareQuota": 102400
-      }
-    },
-
-    {
       "type": "microsoft.storagesync/storageSyncServices/syncGroups",
       "apiVersion": "2019-06-01",
       "name": "[concat(parameters('syncGroupName'), '/default')]",
@@ -142,11 +129,24 @@
     },
 
     {
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(parameters('fileshareName'), '/default/fileshare')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccountName'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "shareQuota": 102400
+      }
+    },
+
+    {
       "type": "microsoft.storagesync/storageSyncServices/syncGroups/cloudEndpoints",
       "apiVersion": "2019-06-01",
-      "name": "[concat(parameters('cloudEndpointName'), '/default')]",
+      "name": "[concat(parameters('cloudEndpointName'), '/default/cloudendpoint')]",
       "dependsOn": [
-        "[resourceId('microsoft.storagesync/storageSyncServices/syncGroups', parameters('syncServiceName'), parameters('syncGroupName'))]",
+        "[resourceId('microsoft.storagesync/storageSyncServices/syncGroups', parameters('syncServiceName'), '/default')]",
         "[resourceId('microsoft.storagesync/storageSyncServices', parameters('syncServiceName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
       ],
