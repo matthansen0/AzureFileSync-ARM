@@ -1,0 +1,161 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "storageAccountName": {
+      "defaultValue": "azurefilestestsa",
+      "type": "String"
+    },
+    "syncServiceName": {
+      "defaultValue": "SyncService01",
+      "type": "String"
+    },
+    "syncGroupName": {
+      "defaultValue": "SyncGroup01",
+      "type": "String"
+    },
+    "cloudEndpointName": {
+      "defaultValue": "cloudendpoint",
+      "type": "String"
+    },
+    "storagetenantid": {
+      "defaultValue": "123456789",
+      "type": "String"
+    },
+    "tags": {
+      "type": "Object"
+    },
+    "fileshareName": {
+      "defaultValue": "fileshare",
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 63,
+      "metadata": {
+        "description": "Specifies the name of the File Share. File share names must be between 3 and 63 characters in length and use numbers, lower-case letters and dash (-) only."
+      }
+    }
+  },
+  "variables": {},
+  "resources": [
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2019-06-01",
+      "name": "[parameters('storageAccountName')]",
+      "location": "eastus",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "largeFileSharesState": "Enabled",
+        "networkAcls": {
+          "bypass": "AzureServices",
+          "virtualNetworkRules": [],
+          "ipRules": [],
+          "defaultAction": "Allow"
+        },
+        "supportsHttpsTrafficOnly": true,
+        "encryption": {
+          "services": {
+            "file": {
+              "keyType": "Account",
+              "enabled": true
+            },
+            "blob": {
+              "keyType": "Account",
+              "enabled": true
+            }
+          },
+          "keySource": "Microsoft.Storage"
+        },
+        "accessTier": "Hot"
+      }
+    },
+    {
+      "type": "microsoft.storagesync/storageSyncServices",
+      "apiVersion": "2019-06-01",
+      "name": "[parameters('syncServiceName')]",
+      "location": "eastus",
+      "properties": {},
+      "tags": "[parameters('tags')]"
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(parameters('storageAccountName'), '/default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ],
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "properties": {
+        "cors": {
+          "corsRules": []
+        },
+        "deleteRetentionPolicy": {
+          "enabled": false
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/fileServices",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(parameters('storageAccountName'), '/default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ],
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      },
+      "properties": {
+        "cors": {
+          "corsRules": []
+        }
+      }
+    },
+
+    {
+      "type": "microsoft.storagesync/storageSyncServices/syncGroups",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(parameters('syncGroupName'), '/default')]",
+      "dependsOn": [
+        "[resourceId('microsoft.storagesync/storageSyncServices', parameters('syncServiceName'))]"
+      ],
+      "properties": {}
+    },
+
+    {
+      "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(parameters('fileshareName'), '/default/fileshare')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/fileServices', parameters('storageAccountName'), 'default')]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "shareQuota": 102400
+      }
+    },
+
+    {
+      "type": "microsoft.storagesync/storageSyncServices/syncGroups/cloudEndpoints",
+      "apiVersion": "2019-06-01",
+      "name": "[concat(parameters('cloudEndpointName'), '/default/cloudendpoint')]",
+      "dependsOn": [
+        "[resourceId('microsoft.storagesync/storageSyncServices/syncGroups', parameters('syncServiceName'), '/default')]",
+        "[resourceId('microsoft.storagesync/storageSyncServices', parameters('syncServiceName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "storageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]",
+        "azureFileShareName": "[parameters('fileshareName')]",
+        "storageAccountTenantId": "[parameters('storagetenantid')]",
+        "friendlyName": "[parameters('fileshareName')]"
+      }
+    }
+  ]
+}
